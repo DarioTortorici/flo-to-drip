@@ -42,17 +42,43 @@ export const formatFloJson = (data) => {
       (event) => new Date(event.date).toDateString() === date.toDateString()
     );
 
-    const symptomEvent = data.operationalData.point_events_manual_v2.find(
+    const symptomEvents = data.operationalData.point_events_manual_v2.filter(
       (event) =>
         event.category === "Symptom" &&
-      new Date(event.date).toDateString() === date.toDateString()
+        new Date(event.date).toDateString() === date.toDateString()
     );
+
+    const symptomFields =
+      symptomEvents.length > 0
+        ? {
+            "pain.other": symptomEvents.some(
+              (event) => !(event.subcategory in symptomMapping)
+            )
+              ? "true"
+              : undefined,
+            "pain.note": symptomEvents
+              .filter((event) => !(event.subcategory in symptomMapping))
+              .map((event) => event.subcategory)
+              .join(", "),
+            ...Object.fromEntries(
+              symptomEvents
+                .filter((event) => event.subcategory in symptomMapping)
+                .map((event) => [symptomMapping[event.subcategory], "true"])
+            ),
+          }
+        : {};
 
     const sexEvent = data.operationalData.point_events_manual_v2.find(
       (event) =>
         event.category === "Sex" &&
-      new Date(event.date).toDateString() === date.toDateString()
+        new Date(event.date).toDateString() === date.toDateString()
     );
+
+    const sexFields = sexEvent
+      ? sexEvent.subcategory in sexMapping
+        ? sexMapping[sexEvent.subcategory]
+        : {}
+      : {};
 
     const moodFields = moodEvent
       ? moodEvent.subcategory in moodMapping
@@ -61,21 +87,6 @@ export const formatFloJson = (data) => {
             "mood.other": "true",
             "mood.note": moodEvent.subcategory,
           }
-      : {};
-
-    const symptomFields = symptomEvent
-      ? symptomEvent.subcategory in symptomMapping
-        ? { [symptomMapping[symptomEvent.subcategory]]: "true" }
-        : {
-            "pain.other": "true",
-            "pain.note": symptomEvent.subcategory,
-          }
-      : {};
-
-    const sexFields = sexEvent
-      ? sexEvent.subcategory in sexMapping
-        ? sexMapping[sexEvent.subcategory]
-        : {}
       : {};
 
     return {
