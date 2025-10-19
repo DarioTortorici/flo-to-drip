@@ -48,6 +48,12 @@ export const formatFloJson = (data) => {
       new Date(event.date).toDateString() === date.toDateString()
     );
 
+    const sexEvent = data.operationalData.point_events_manual_v2.find(
+      (event) =>
+        event.category === "Sex" &&
+      new Date(event.date).toDateString() === date.toDateString()
+    );
+
     const moodFields = moodEvent
       ? moodEvent.subcategory in moodMapping
         ? { [moodMapping[moodEvent.subcategory]]: "true" }
@@ -66,12 +72,19 @@ export const formatFloJson = (data) => {
           }
       : {};
 
+    const sexFields = sexEvent
+      ? sexEvent.subcategory in sexMapping
+        ? sexMapping[sexEvent.subcategory]
+        : {}
+      : {};
+
     return {
       date: format(new Date(date), "yyyy-MM-dd"),
       ...initialExtraFields,
       "bleeding.value": isInInterval ? "2" : "",
       "bleeding.exclude": isInInterval ? "FALSE" : "",
       ...extraFields,
+      ...sexFields,
       ...symptomFields,
       ...moodFields,
     };
@@ -129,6 +142,12 @@ const extraFields = {
   "mood.angry": "",
   "mood.other": "",
   "mood.note": "",
+};
+
+const sexMapping = {
+  Protected: { "sex.partner": "true", "sex.condom": "true" },
+  Masturbation: { "sex.solo": "true"},
+  "High Sex Drive": { "desire.value": "2" },
 };
 
 const symptomMapping = {
