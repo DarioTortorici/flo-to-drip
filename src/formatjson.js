@@ -12,12 +12,15 @@ const jsonToCSV = (json) =>
 
 export const formatFloJson = (data) => {
   const cycles = data.operationalData.cycles;
-  
+  const moodEvents = data.operationalData.point_events_manual_v2.filter(
+    (event) => event.category === "Mood"
+  );
+
   // sort in descending order, to ensure the intervals logic works
   cycles.sort((a, b) => {
     const aD = new Date(a.period_start_date);
     const bD = new Date(b.period_start_date);
-    
+
     return bD.getTime() - aD.getTime();
   });
 
@@ -34,12 +37,27 @@ export const formatFloJson = (data) => {
         end: new Date(period_end_date),
       })
     );
+
+    const moodEvent = moodEvents.find(
+      (event) => new Date(event.date).toDateString() === date.toDateString()
+    );
+
+    const moodFields = moodEvent
+      ? moodEvent.subcategory in moodMapping
+        ? { [moodMapping[moodEvent.subcategory]]: "true" }
+        : {
+            "mood.other": "true",
+            "mood.note": moodEvent.subcategory,
+          }
+      : {};
+
     return {
       date: format(new Date(date), "yyyy-MM-dd"),
       ...initialExtraFields,
       "bleeding.value": isInInterval ? "2" : "",
       "bleeding.exclude": isInInterval ? "FALSE" : "",
       ...extraFields,
+      ...moodFields,
     };
   });
 
@@ -95,4 +113,16 @@ const extraFields = {
   "mood.angry": "",
   "mood.other": "",
   "mood.note": "",
+};
+
+const moodMapping = {
+  Happy: "mood.happy",
+  Neutral: "mood.fine",
+  Sad: "mood.sad",
+  Stressed: "mood.stressed",
+  Balanced: "mood.balanced",
+  Anxious: "mood.anxious",
+  Energetic: "mood.energetic",
+  Fatigue: "mood.fatigue",
+  Angry: "mood.angry",
 };
