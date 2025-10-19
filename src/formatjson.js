@@ -42,6 +42,12 @@ export const formatFloJson = (data) => {
       (event) => new Date(event.date).toDateString() === date.toDateString()
     );
 
+    const symptomEvent = data.operationalData.point_events_manual_v2.find(
+      (event) =>
+        event.category === "Symptom" &&
+      new Date(event.date).toDateString() === date.toDateString()
+    );
+
     const moodFields = moodEvent
       ? moodEvent.subcategory in moodMapping
         ? { [moodMapping[moodEvent.subcategory]]: "true" }
@@ -51,12 +57,22 @@ export const formatFloJson = (data) => {
           }
       : {};
 
+    const symptomFields = symptomEvent
+      ? symptomEvent.subcategory in symptomMapping
+        ? { [symptomMapping[symptomEvent.subcategory]]: "true" }
+        : {
+            "pain.other": "true",
+            "pain.note": symptomEvent.subcategory,
+          }
+      : {};
+
     return {
       date: format(new Date(date), "yyyy-MM-dd"),
       ...initialExtraFields,
       "bleeding.value": isInInterval ? "2" : "",
       "bleeding.exclude": isInInterval ? "FALSE" : "",
       ...extraFields,
+      ...symptomFields,
       ...moodFields,
     };
   });
@@ -113,6 +129,16 @@ const extraFields = {
   "mood.angry": "",
   "mood.other": "",
   "mood.note": "",
+};
+
+const symptomMapping = {
+  Cramps: "pain.cramps",
+  OvulationPain: "pain.ovulationPain",
+  Headache: "pain.headache",
+  Backache: "pain.backache",
+  Nausea: "pain.nausea",
+  TenderBreasts: "pain.tenderBreasts",
+  Migraine: "pain.migraine",
 };
 
 const moodMapping = {
